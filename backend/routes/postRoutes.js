@@ -5,10 +5,17 @@ const User = require("../models/User");
 const auth = require("../middleware/authMiddleware");
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, "../uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
 
 // Set storage engine
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/"),
+  destination: (req, file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
 });
 
@@ -35,54 +42,81 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// POST create new post (without image upload)
-router.post("/", auth, async (req, res) => {
+// POST create new post (with optional image upload)
+router.post("/", [auth, upload.single("image")], async (req, res) => {
   try {
-    const newPost = new Post({
-      ...req.body,
-      user: req.user.id,
-    });
-    await newPost.save();
-    res.status(201).json(newPost);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-});
+    console.log("Received post creation request.");
+    console.log("Request body:", req.body);
+    console.log("Authenticated user ID:", req.user.id);
+    console.log("Uploaded file:", req.file);
 
-// POST create new post with image upload
-router.post("/upload", [auth, upload.single("image")], async (req, res) => {
-  try {
+    const { title, description, source, category, isDraft } = req.body;
     const newPost = new Post({
-      title: req.body.title,
-      description: req.body.description,
-      source: req.body.source,
-      category: req.body.category,
-      imageUrl: `/uploads/${req.file.filename}`,
+      title,
+      description,
+      source,
+      category,
+      imageUrl: req.file ? `/uploads/${req.file.filename}` : undefined,
+      isDraft: isDraft || false,
       user: req.user.id,
     });
     await newPost.save();
+
+    // Add post to user's createdPosts
+    const user = await User.findById(req.user.id);
+    user.createdPosts.push(newPost._id);
+    await user.save();
+
+    console.log("Post saved successfully:", newPost);
     res.status(201).json(newPost);
   } catch (err) {
+    console.error("Error creating post:", err); // Log the full error for debugging
     res.status(400).json({ message: err.message });
   }
 });
 
 // PATCH update post
-router.patch("/:id", async (req, res) => {
+router.patch("/:id", auth, async (req, res) => { // Added auth middleware
   try {
+    const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    // Ensure user owns the post
+    if (post.user.toString() !== req.user.id) {
+      return res.status(401).json({ msg: "User not authorized" });
+    }
+
     const updatedPost = await Post.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(updatedPost);
   } catch (err) {
+    console.error(err);
     res.status(400).json({ message: err.message });
   }
 });
 
 // DELETE post
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", auth, async (req, res) => { // Added auth middleware
   try {
+    const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    // Ensure user owns the post
+    if (post.user.toString() !== req.user.id) {
+      return res.status(401).json({ msg: "User not authorized" });
+    }
+
+    // Delete image if it exists
+    if (post.imageUrl) {
+      const imagePath = path.join(__dirname, "..", post.imageUrl);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
+    }
+
     await Post.findByIdAndDelete(req.params.id);
     res.json({ message: "Post deleted successfully" });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -123,11 +157,11 @@ router.delete("/:id/save", auth, async (req, res) => {
 });
 
 // @route   GET api/posts/myposts
-// @desc    Get all posts by user
+// @desc    Get all published posts by user
 // @access  Private
 router.get("/myposts", auth, async (req, res) => {
   try {
-    const posts = await Post.find({ user: req.user.id }).sort({ createdAt: -1 });
+    const posts = await Post.find({ user: req.user.id, isDraft: false }).sort({ createdAt: -1 });
     res.json(posts);
   } catch (err) {
     console.error(err.message);
@@ -142,6 +176,19 @@ router.get("/saved/posts", auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).populate("savedPosts");
     res.json(user.savedPosts);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+});
+
+// @route   GET api/posts/mydrafts
+// @desc    Get all draft posts by user
+// @access  Private
+router.get("/mydrafts", auth, async (req, res) => {
+  try {
+    const drafts = await Post.find({ user: req.user.id, isDraft: true }).sort({ createdAt: -1 });
+    res.json(drafts);
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server Error");
