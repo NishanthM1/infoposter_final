@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
-import { fetchPosts } from "../services/api";
+import { useLocation } from "react-router-dom"; // Add this import
+import { fetchPosts, fetchSavedPosts } from "../services/api";
 import NewsCard from "../components/NewsCard";
 import FilterBar from "../components/FilterBar";
 
-export default function Home() {
+export default function Home({ isAuthenticated }) {
   const [allPosts, setAllPosts] = useState([]);
   const [filteredPosts, setFilteredPosts] = useState([]);
+  const [savedPosts, setSavedPosts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("All"); // Default to "All"
   const [showDescription, setShowDescription] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
+  const location = useLocation(); // Initialize useLocation
 
   useEffect(() => {
     const getPosts = async () => {
@@ -20,8 +23,23 @@ export default function Home() {
         console.error("Failed to fetch posts:", error);
       }
     };
+
+    const getSavedPosts = async () => {
+      if (isAuthenticated) {
+        try {
+          const saved = await fetchSavedPosts();
+          setSavedPosts(saved.map(post => post._id)); // Store only IDs for quick lookup
+        } catch (error) {
+          console.error("Failed to fetch saved posts:", error);
+        }
+      } else {
+        setSavedPosts([]); // Clear saved posts if not authenticated
+      }
+    };
+
     getPosts();
-  }, []);
+    getSavedPosts();
+  }, [isAuthenticated, location.pathname]);
 
   const handleFilter = (category) => {
     setSelectedCategory(category);
@@ -44,7 +62,7 @@ export default function Home() {
   };
 
   const homePageStyle = {
-    padding: '20px',
+    padding: '1px',
     background: '#f9f9f9',
   };
 
@@ -87,7 +105,12 @@ export default function Home() {
       ) : (
         <div style={newsGridStyle}>
           {filteredPosts.map((p) => (
-            <NewsCard key={p._id} post={p} onClick={() => handleCardClick(p)} />
+            <NewsCard
+              key={p._id}
+              post={p}
+              onClick={() => handleCardClick(p)}
+              initialIsSaved={savedPosts.includes(p._id)}
+            />
           ))}
         </div>
       )}

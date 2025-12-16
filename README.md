@@ -1,63 +1,68 @@
-# InfoPoster Project
+# InfoPoster
 
-## Overview
-InfoPoster is a full-stack web application designed to allow users to create, view, and manage news-related posts. It features user authentication, post creation with image uploads, and the ability to view and interact with posts.
-
-## Features
-*   **User Authentication:** Register and log in securely.
-*   **Post Management:** Create, view, update, and delete your own posts.
-*   **Image Uploads:** Include images with your posts.
-*   **News Feed:** Browse posts from all users.
-*   **User Profiles:** View posts created by specific users.
-
-## Technologies Used
-
-### Frontend
-*   **React:** A JavaScript library for building user interfaces.
-*   **React Router:** For navigation within the application.
-*   **Axios:** For making HTTP requests to the backend API.
-*   **CSS:** For styling the application.
-
-### Backend
-*   **Node.js:** A JavaScript runtime for server-side development.
-*   **Express.js:** A web application framework for Node.js.
-*   **MongoDB:** A NoSQL database for storing application data.
-*   **Mongoose:** An ODM (Object Data Modeling) library for MongoDB and Node.js.
-*   **JWT (JSON Web Tokens):** For secure user authentication.
-*   **Multer:** For handling `multipart/form-data`, primarily for file uploads.
-*   **Bcrypt.js:** For hashing passwords.
+InfoPoster is a full-stack MERN application that allows users to create, view, and share posts.
 
 ## Getting Started
 
+To get the application up and running, you'll need to start both the backend and frontend servers.
+
 ### Prerequisites
-*   Node.js (LTS version recommended)
-*   MongoDB (local or cloud-hosted)
-*   Git
 
-### Installation
+- Node.js
+- npm
+- MongoDB
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/NishanthM1/infoposter.git
-    cd infoposter
-    ```
+### Backend Setup
 
-2.  **Backend Setup:**
+1.  **Navigate to the backend directory:**
+
     ```bash
     cd backend
-    npm install
-    # Create a .env file with your MongoDB URI and JWT Secret
-    # Example .env content:
-    # MONGO_URI=mongodb://localhost:27017/infoposter
-    # JWT_SECRET=your_jwt_secret
-    node server.js
     ```
 
-3.  **Frontend Setup:**
+2.  **Install dependencies:**
+
     ```bash
-    cd ../frontend
     npm install
+    ```
+
+3.  **Create a `.env` file:**
+
+    Create a `.env` file in the `backend` directory and add the following:
+
+    ```
+    MONGO_URI=YOUR_MONGO_URI
+    PORT=5000
+    ```
+
+    Replace `YOUR_MONGO_URI` with your MongoDB connection string. You can get one for free from [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
+
+4.  **Run the server:**
+
+    ```bash
     npm start
     ```
 
-The application should now be running on `http://localhost:3000`.
+    The backend server will be running on `http://localhost:5000`.
+
+### Frontend Setup
+
+1.  **Navigate to the frontend directory:**
+
+    ```bash
+    cd frontend
+    ```
+
+2.  **Install dependencies:**
+
+    ```bash
+    npm install
+    ```
+
+3.  **Run the client:**
+
+    ```bash
+    npm start
+    ```
+
+    The frontend development server will be running on `http://localhost:3000`.

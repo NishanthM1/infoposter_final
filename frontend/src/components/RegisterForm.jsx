@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { register } from '../services/api';
 
-const RegisterForm = ({ onSwitchToLogin, onRegisterSuccess }) => {
+const RegisterForm = ({ onSwitchToLogin, onRegisterSuccess, setIsAuthenticated }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -19,6 +19,7 @@ const RegisterForm = ({ onSwitchToLogin, onRegisterSuccess }) => {
       const res = await register(formData);
       console.log(res.data);
       localStorage.setItem('token', res.data.token);
+      setIsAuthenticated(true); // Set isAuthenticated to true on successful registration
       onRegisterSuccess();
     } catch (err) {
       console.error(err.response.data);

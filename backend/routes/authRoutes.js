@@ -132,4 +132,19 @@ router.get('/me', auth, async (req, res) => {
   }
 });
 
+// @route   GET api/auth/users
+// @desc    Get all users
+// @access  Private (Admin only, or for general listing if desired)
+router.get('/users', auth, async (req, res) => {
+  try {
+    // In a real application, you might want to restrict this to admin users only
+    // For now, any authenticated user can fetch all users (excluding passwords)
+    const users = await User.find().select('-password');
+    res.json(users);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
 module.exports = router;

@@ -22,16 +22,10 @@ export function Header() {
   );
 }
 
-export function Navbar() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+export function Navbar({ isAuthenticated, setIsAuthenticated }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false); // Keep this for switching
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    setIsAuthenticated(!!token);
-  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -86,9 +80,6 @@ export function Navbar() {
         <Link to="/saved" className="nav-link-button">
           Saved
         </Link>
-        <Link to="/myposts" className="nav-link-button">
-          My Posts
-        </Link>
       </div>
       <div className="navbar-actions">
         {isAuthenticated ? (
@@ -108,11 +99,11 @@ export function Navbar() {
       </div>
 
       <Modal show={showLoginModal} onClose={closeLoginModal} title="Welcome to Infoposter">
-        <LoginForm onLoginSuccess={handleLoginSuccess} onSwitchToRegister={switchToRegister} />
+        <LoginForm onLoginSuccess={handleLoginSuccess} onSwitchToRegister={switchToRegister} setIsAuthenticated={setIsAuthenticated} />
       </Modal>
 
       <Modal show={showRegisterModal} onClose={closeRegisterModal} title="Create New Account">
-        <RegisterForm onRegisterSuccess={handleRegisterSuccess} onSwitchToLogin={switchToLogin} />
+        <RegisterForm onRegisterSuccess={handleRegisterSuccess} onSwitchToLogin={switchToLogin} setIsAuthenticated={setIsAuthenticated} />
       </Modal>
     </nav>
   );

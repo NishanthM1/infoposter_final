@@ -5,13 +5,18 @@ const cors = require("cors");
 const postRoutes = require("./routes/postRoutes");
 const authRoutes = require("./routes/authRoutes");
 
-dotenv.config();
+dotenv.config({ path: __dirname + '/.env' });
 connectDB();
 
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:3000",
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-auth-token"],
+  credentials: true,
+}));
 app.use(express.json());
 app.use("/uploads", express.static("uploads")); // serve uploaded images
 

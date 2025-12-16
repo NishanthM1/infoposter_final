@@ -24,10 +24,55 @@ const upload = multer({ storage });
 // GET all posts
 router.get("/", async (req, res) => {
   try {
-    const posts = await Post.find().sort({ createdAt: -1 });
+    console.log("Fetching all posts...");
+    const isDraft = req.query.isDraft === 'true';
+    const filter = isDraft ? { isDraft: true } : { isDraft: false };
+    console.log("Filter applied:", filter);
+    const posts = await Post.find(filter).sort({ createdAt: -1 });
+    console.log("Number of posts found:", posts.length);
+    console.log("Posts fetched:", posts);
     res.json(posts);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+// @route   GET api/posts/myposts
+// @desc    Get all published posts by user
+// @access  Private
+router.get("/myposts", auth, async (req, res) => {
+  try {
+    const posts = await Post.find({ user: req.user.id, isDraft: false }).sort({ createdAt: -1 });
+    res.json(posts);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+});
+
+// @route   GET api/posts/saved/posts
+// @desc    Get all saved posts
+// @access  Private
+router.get("/saved/posts", auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate("savedPosts");
+    res.json(user.savedPosts);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+});
+
+// @route   GET api/posts/mydrafts
+// @desc    Get all draft posts by user
+// @access  Private
+router.get("/mydrafts", auth, async (req, res) => {
+  try {
+    const drafts = await Post.find({ user: req.user.id, isDraft: true }).sort({ createdAt: -1 });
+    res.json(drafts);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
   }
 });
 
@@ -42,6 +87,22 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+router.get("/:category", async (req, res) => {
+  try {
+    const { category } = req.params;
+    const isDraft = req.query.isDraft === 'true';
+    const filter = { isDraft, category };
+
+    console.log("Fetching posts with filter:", filter);
+    const posts = await Post.find(filter).sort({ createdAt: -1 });
+    console.log(`Found ${posts.length} posts.`);
+    res.json(posts);
+  } catch (err) {
+    console.error("Error fetching posts:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // POST create new post (with optional image upload)
 router.post("/", [auth, upload.single("image")], async (req, res) => {
   try {
@@ -50,14 +111,15 @@ router.post("/", [auth, upload.single("image")], async (req, res) => {
     console.log("Authenticated user ID:", req.user.id);
     console.log("Uploaded file:", req.file);
 
-    const { title, description, source, category, isDraft } = req.body;
+    const { title, description, source, category } = req.body;
+    const isDraft = req.query.isDraft === 'true'; // Read isDraft from query parameters
     const newPost = new Post({
       title,
       description,
       source,
       category,
       imageUrl: req.file ? `/uploads/${req.file.filename}` : undefined,
-      isDraft: isDraft || false,
+      isDraft: isDraft,
       user: req.user.id,
     });
     await newPost.save();
@@ -150,45 +212,6 @@ router.delete("/:id/save", auth, async (req, res) => {
     );
     await user.save();
     res.json(user.savedPosts);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server Error");
-  }
-});
-
-// @route   GET api/posts/myposts
-// @desc    Get all published posts by user
-// @access  Private
-router.get("/myposts", auth, async (req, res) => {
-  try {
-    const posts = await Post.find({ user: req.user.id, isDraft: false }).sort({ createdAt: -1 });
-    res.json(posts);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server Error");
-  }
-});
-
-// @route   GET api/posts/saved/posts
-// @desc    Get all saved posts
-// @access  Private
-router.get("/saved/posts", auth, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).populate("savedPosts");
-    res.json(user.savedPosts);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server Error");
-  }
-});
-
-// @route   GET api/posts/mydrafts
-// @desc    Get all draft posts by user
-// @access  Private
-router.get("/mydrafts", auth, async (req, res) => {
-  try {
-    const drafts = await Post.find({ user: req.user.id, isDraft: true }).sort({ createdAt: -1 });
-    res.json(drafts);
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server Error");

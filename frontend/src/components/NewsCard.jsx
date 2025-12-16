@@ -1,14 +1,19 @@
-import React, { useState } from 'react';
-import { API } from '../services/api';
+import React, { useState, useEffect } from 'react';
+import { API, deletePost } from '../services/api';
 
-export default function NewsCard({ post, onClick }) {
-  const [isSaved, setIsSaved] = useState(false);
+export default function NewsCard({ post, onClick, onDelete, initialIsSaved }) {
+  const [isSaved, setIsSaved] = useState(initialIsSaved);
+
+  useEffect(() => {
+    setIsSaved(initialIsSaved);
+  }, [initialIsSaved, post._id]);
 
   const handleSave = async (e) => {
     e.stopPropagation(); // Prevent card click event
     const token = localStorage.getItem('token');
     if (!token) {
       // Handle not logged in case
+      alert('Please log in to save posts.');
       return;
     }
 
@@ -85,10 +90,19 @@ export default function NewsCard({ post, onClick }) {
         <h2 style={titleStyle}>{post.title}</h2>
         <p style={summaryStyle}>{post.summary}</p>
         <div style={actionsStyle}>
-          <span style={iconStyle}>👍</span>
           <span style={iconStyle} onClick={handleSave}>{isSaved ? '❤️' : '🔖'}</span>
-          <span style={iconStyle}>🔗</span>
-          <span style={iconStyle}>📊</span>
+          {onDelete && (
+            <span style={iconStyle} onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                await deletePost(post._id);
+                onDelete(); // Call the onDelete prop to refresh the list
+              } catch (error) {
+                console.error("Failed to delete post:", error);
+                alert("Failed to delete post. Please try again.");
+              }
+            }}>🗑️</span>
+          )}
         </div>
       </div>
     </div>

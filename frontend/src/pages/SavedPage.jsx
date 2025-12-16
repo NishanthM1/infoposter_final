@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API } from '../services/api';
+import { fetchSavedPosts } from '../services/api';
 import NewsCard from '../components/NewsCard';
 
 const SavedPage = () => {
@@ -7,15 +7,10 @@ const SavedPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchSavedPosts = async () => {
+    const getAndSetSavedPosts = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await API.get('/posts/saved/posts', {
-          headers: {
-            'x-auth-token': token,
-          },
-        });
-        setSavedPosts(res.data);
+        const posts = await fetchSavedPosts(); // This calls the imported fetchSavedPosts
+        setSavedPosts(posts);
       } catch (err) {
         console.error(err);
       } finally {
@@ -23,7 +18,7 @@ const SavedPage = () => {
       }
     };
 
-    fetchSavedPosts();
+    getAndSetSavedPosts();
   }, []);
 
   if (loading) {
@@ -35,7 +30,7 @@ const SavedPage = () => {
       <h1>Saved Posts</h1>
       <div className="news-grid">
         {savedPosts.length > 0 ? (
-          savedPosts.map((post) => <NewsCard key={post._id} post={post} />)
+          savedPosts.map((post) => <NewsCard key={post._id} post={post} initialIsSaved={true} />)
         ) : (
           <p>You have no saved posts.</p>
         )}

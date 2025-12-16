@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
-import { createPost, fetchMyPosts, fetchMyDrafts } from '../services/api';
+import { createPost, getMyPosts as fetchMyPosts, getMyDrafts as fetchMyDrafts, deletePost } from '../services/api';
 import NewsCard from '../components/NewsCard';
 
 export default function CreatePost() {
@@ -21,7 +21,7 @@ export default function CreatePost() {
   const getMyPosts = async () => {
     try {
       const res = await fetchMyPosts();
-      setMyPosts(res.data);
+      setMyPosts(res);
     } catch (err) {
       console.error(err);
     } finally {
@@ -32,7 +32,7 @@ export default function CreatePost() {
   const getMyDrafts = async () => {
     try {
       const res = await fetchMyDrafts();
-      setMyDrafts(res.data);
+      setMyDrafts(res);
     } catch (err) {
       console.error(err);
     } finally {
@@ -80,9 +80,9 @@ export default function CreatePost() {
 
     try {
       if (fileInput.files[0]) {
-        await createPost(postData, true); // Pass true for isFormData
+        await createPost(postData, true, false); // Pass true for isFormData, false for isDraft
       } else {
-        await createPost(formData);
+        await createPost(formData, false, false); // Pass false for isDraft
       }
       alert("Post Created Successfully!");
       // After successful post creation, re-fetch posts and drafts
@@ -101,6 +101,40 @@ export default function CreatePost() {
     } catch (error) {
       console.error("Failed to create post:", error);
       alert("Failed to create post. Please try again.");
+    }
+  };
+
+  const handleSaveAsDraft = async (e) => {
+    e.preventDefault();
+    const postData = new FormData();
+    for (const key in formData) {
+      postData.append(key, formData[key]);
+    }
+
+    const fileInput = document.getElementById('upload-image');
+    if (fileInput.files) {
+      postData.append('image', fileInput.files);
+    }
+
+    try {
+      if (fileInput.files) {
+        await createPost(postData, true, true); // Pass true for isFormData, true for isDraft
+      } else {
+        await createPost(formData, false, true); // Pass isDraft as true
+      }
+      alert("Draft Saved Successfully!");
+      getMyDrafts(); // Re-fetch drafts to update the list
+      setFormData({
+        title: "",
+        description: "",
+        source: "",
+        category: "",
+      });
+      setImagePreview(null);
+      setSelectedFileName('');
+    } catch (error) {
+      console.error("Failed to save draft:", error);
+      alert("Failed to save draft. Please try again.");
     }
   };
 
@@ -130,7 +164,7 @@ export default function CreatePost() {
                   <option value="Karnataka">Karnataka</option>
                 </select>
                 <div className="create-post-form-actions">
-                  <button type="button" className="button-draft">Save as Draft</button>
+                  <button type="button" className="button-draft" onClick={handleSaveAsDraft}>Save as Draft</button>
                   <button type="submit" className="button-post">Post</button>
                 </div>
               </div>
@@ -185,7 +219,7 @@ export default function CreatePost() {
         ) : (
           <div className="news-grid">
             {myPosts.length > 0 ? (
-              myPosts.map((post) => <NewsCard key={post._id} post={post} />)
+              myPosts.map((post) => <NewsCard key={post._id} post={post} onDelete={getMyPosts} />)
             ) : (
               <p>You have not created any posts yet.</p>
             )}
@@ -200,7 +234,7 @@ export default function CreatePost() {
         ) : (
           <div className="news-grid">
             {myDrafts.length > 0 ? (
-              myDrafts.map((draft) => <NewsCard key={draft._id} post={draft} />)
+              myDrafts.map((draft) => <NewsCard key={draft._id} post={draft} onDelete={getMyDrafts} />)
             ) : (
               <p>You have no saved drafts yet.</p>
             )}
